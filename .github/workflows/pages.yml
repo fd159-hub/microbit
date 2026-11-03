@@ -1,0 +1,35 @@
+name: Deploy classroom to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check guided.js && node --check guide-steps.js && node --check lessons.js && node --check sim09.js && node --check guide-steps08.js && node --check lessons08.js && node --check sim08.js
+      - uses: actions/configure-pages@v5
+      - run: mkdir -p _site && cp index.html lesson08.html lesson09.html cover.css guided.css guided.js guide-steps.js guide-steps08.js lessons.js lessons08.js sim09.js sim08.js _site/ && cp -r assets _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+
+
