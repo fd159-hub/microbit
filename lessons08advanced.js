@@ -1,0 +1,3 @@
+// 保留上課 HEX 內嵌原碼，逐字比對。
+const LESSONS=[{"id":"lesson08advanced","code":"input.onSound(DetectedSound.Loud, function () {\n    // 1. 記錄觸發總次數\n    觸發總次數 += 1\n    // 2. 計算總次數除以 3 的餘數\n    餘數 = 觸發總次數 % 3\n    // 3. 根據餘數決定畫面\n    if (餘數 == 1) {\n        basic.showIcon(IconNames.SmallHeart)\n    } else if (餘數 == 2) {\n        basic.showIcon(IconNames.Heart)\n    } else if (餘數 == 0) {\n        basic.clearScreen()\n    }\n    basic.pause(1000)\n})\nlet 餘數 = 0\nlet 觸發總次數 = 0\ninput.setSoundThreshold(SoundThreshold.Loud, 160)\nbasic.clearScreen()\n"}];
+const FOUNDATION_LESSON={"id":"08advanced","title":"拍手燈進階","buttons":[["loud","一次大聲事件"]]};

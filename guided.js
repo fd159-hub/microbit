@@ -1,6 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const COURSE_ID=document.body.dataset.lesson||'09';
+const COURSE_LABEL=document.body.dataset.courseLabel||COURSE_ID;
 const KEY=`microbit${COURSE_ID}-guided-v1`;
 const ORIGIN='https://makecode.microbit.org';
 let current=0,checked=[];
@@ -40,7 +41,7 @@ function updateControls(){
     $('prev').disabled=current===0;
     $('next').disabled=!confirmed||last;
     $('next').textContent=last?(confirmed?'本課完成 ✓':'完成最後檢查'):confirmed?'下一步 →':'請先檢查並打勾';
-    $('journey').textContent=checked.length===GUIDE_STEPS.length?`第 ${COURSE_ID} 課已完成 ✓`:`已檢查 ${checked.length} / ${GUIDE_STEPS.length} 步`;
+    $('journey').textContent=checked.length===GUIDE_STEPS.length?`第 ${COURSE_LABEL} 課已完成 ✓`:`已檢查 ${checked.length} / ${GUIDE_STEPS.length} 步`;
     $('stepDots').querySelectorAll('button').forEach((b,j)=>{
         b.disabled=j>unlockedStep();
         b.classList.toggle('active',j===current);
@@ -80,9 +81,17 @@ $('layoutToggle').addEventListener('click',()=>{const compact=document.body.clas
 $('originalCode').textContent=fullProgram;
 $('resetGuide').addEventListener('click',()=>{checked=[];show(0);$('storageStatus').textContent='已清除步驟勾選，右側 MakeCode 專案不受影響。';});
 const isCompass=['11','12'].includes(COURSE_ID);
-const demo=isCompass?createCompassModel():COURSE_ID==='10'?createRecordModel():COURSE_ID==='08'?createClapModel():createBlowModel();
-if(!isCompass&&COURSE_ID!=='10')for(let i=0;i<25;i++){const p=document.createElement('span');p.className='pixel';$('demoGrid').append(p);}
+const isFoundation=['01','02','03','04','05','06','07','08advanced'].includes(COURSE_ID);
+const demo=isFoundation?createFoundationModel(COURSE_ID):isCompass?createCompassModel():COURSE_ID==='10'?createRecordModel():COURSE_ID==='08'?createClapModel():createBlowModel();
+if(!isFoundation&&!isCompass&&COURSE_ID!=='10')for(let i=0;i<25;i++){const p=document.createElement('span');p.className='pixel';$('demoGrid').append(p);}
 function renderDemo(){
+    if(isFoundation){
+        $('demoAction').textContent=describeFoundationAction(demo.trace[demo.position]);
+        $('demoStatus').textContent=(demo.trace.length?`動作 ${demo.position+1} / ${demo.trace.length}`:'先選一種操作')+(COURSE_ID==='08advanced'?` · 觸發總次數 ${demo.count} · 餘數 ${demo.remainder}`:'');
+        $('demoNext').disabled=demo.position>=demo.trace.length-1;
+        $('demoTrace').replaceChildren(...demo.trace.map((action,i)=>{const li=document.createElement('li');li.textContent=describeFoundationAction(action);li.classList.toggle('current-action',i===demo.position);return li;}));
+        return;
+    }
     if(isCompass){
         $('heading').value=String(demo.heading);$('headingValue').textContent=String(demo.heading);
         $('compassDisplay').textContent=demo.display||'（畫面空白）';
@@ -96,7 +105,11 @@ function renderDemo(){
     }
     [...$('demoGrid').children].forEach((p,i)=>p.classList.toggle('on',demo.pixels[i]));$('demoGrid').setAttribute('aria-label',`目前 ${demo.pixels.filter(Boolean).length} 顆 LED 亮起`);
 }
-if(isCompass){
+if(isFoundation){
+    document.querySelectorAll('[data-demo-event]').forEach(button=>button.addEventListener('click',()=>{demo.run(button.dataset.demoEvent);renderDemo();}));
+    $('demoNext').addEventListener('click',()=>{demo.next();renderDemo();});
+    $('demoReset').addEventListener('click',()=>{demo.reset();renderDemo();});
+}else if(isCompass){
     $('compassA').addEventListener('click',()=>{demo.a();renderDemo();});
     $('heading').addEventListener('input',()=>{demo.heading=Number($('heading').value);demo.tick();renderDemo();});
     $('demoReset').addEventListener('click',()=>{demo.reset();renderDemo();});
@@ -145,7 +158,7 @@ function clearUsage(resetId,announce=false){
     try{
         const keys=Array.from({length:localStorage.length},(_,i)=>localStorage.key(i));
         for(const key of keys){
-            if(/^microbit\d{2}-(guided|makecode-projects)-v\d+$/.test(key)||['microbit-classroom-v1','microbit-actual-lessons-v1'].includes(key))localStorage.removeItem(key);
+            if(/^microbit\d{2}(?:advanced)?-(guided|makecode-projects)-v\d+$/.test(key)||['microbit-classroom-v1','microbit-actual-lessons-v1'].includes(key))localStorage.removeItem(key);
         }
         if(announce)localStorage.setItem(RESET_SIGNAL,resetId);
     }catch{storageCleared=false;}
@@ -153,7 +166,7 @@ function clearUsage(resetId,announce=false){
     demo.reset();renderDemo();
     if($('trace'))$('trace').replaceChildren();
     if($('sound')){$('sound').value='180';$('soundValue').textContent='180';}
-    if(!isCompass)$('demoStatus').textContent=COURSE_ID==='10'?'開機：三個欄位已建立，尚無紀錄。':COURSE_ID==='08'?'開機：開關 = 0，燈是熄滅的。':'開機空白，先按 A。';
+    if(!isFoundation&&!isCompass)$('demoStatus').textContent=COURSE_ID==='10'?'開機：三個欄位已建立，尚無紀錄。':COURSE_ID==='08'?'開機：開關 = 0，燈是熄滅的。':'開機空白，先按 A。';
     $('storageStatus').textContent='';
     $('editorSaveStatus').textContent='正在開啟空白練習區…';
     $('clearStatus').textContent=storageCleared?'已清除本站各課進度與積木。':'已重設目前畫面，但瀏覽器未允許清除存檔。';

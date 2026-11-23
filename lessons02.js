@@ -1,0 +1,3 @@
+// 保留上課 HEX 內嵌原碼，逐字比對。
+const LESSONS=[{"id":"lesson02","code":"input.onButtonPressed(Button.A, function () {\n    for (let index = 0; index < 4; index++) {\n        basic.showIcon(IconNames.Heart)\n        basic.showIcon(IconNames.SmallHeart)\n    }\n    basic.clearScreen()\n})\ninput.onButtonPressed(Button.AB, function () {\n    basic.showString(\"Hello!\")\n})\ninput.onButtonPressed(Button.B, function () {\n    basic.showIcon(IconNames.Sad)\n    basic.pause(1000)\n    basic.clearScreen()\n})\n"}];
+const FOUNDATION_LESSON={"id":"02","title":"心情按鈕","buttons":[["A","按 A"],["B","按 B"],["AB","按 A+B"]]};

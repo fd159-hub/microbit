@@ -2,6 +2,7 @@
 .official-blocks{width:auto;max-width:100%;max-height:310px;margin:0 auto}.nest.input-border{border-color:var(--input)}
 .blocks .prep-flow{color:var(--ink)}.blocks .prep-flow b{width:auto;min-width:65px;padding:0 8px;border-radius:7px}.blocks [role=status]{color:var(--green);font-size:12px}
 body[data-lesson="11"] .official-blocks,body[data-lesson="12"] .official-blocks{width:100%;max-height:none}
+.radio-category{background:#d80bad}.music-category{background:#c63050}.demo-action{font-size:24px;font-weight:700;background:var(--lime);border-radius:10px;padding:16px}.current-action{font-weight:bold;color:var(--green)}body[data-course-label] .official-blocks{width:100%;max-height:none}
 .check{padding:14px;background:#f0f5e4;border:2px solid #91b494;border-radius:9px;font-weight:600}.check input{width:19px;height:19px;flex-shrink:0}.step-dot:disabled{opacity:.4;cursor:not-allowed}.step-nav .primary:disabled{background:#e3e8df;color:#63725c;border-color:#d3ddcb;opacity:1;cursor:not-allowed}
 .check-heading{display:block;font-size:12px;color:var(--green);margin-bottom:5px}
 .guide>.check{margin:10px 16px;padding:10px 12px;flex-shrink:0;font-size:13px}.guide>.check .check-heading{margin-bottom:3px}.step-nav{flex-shrink:0}.official-blocks{max-height:270px}
