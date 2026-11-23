@@ -10,11 +10,14 @@ const images=new Map(Array.from({length:GUIDE_STEPS.length-1},(_,i)=>[i+1,COURSE
 // 僅接受指定 iframe 與官方 origin，不向外部服務同步學生程式。
 const PROJECT_KEY=`microbit${COURSE_ID}-makecode-projects-v1`;
 let editorProjects=[];
+let editorReady=false;
 try{const saved=JSON.parse(localStorage.getItem(PROJECT_KEY)||'[]');if(Array.isArray(saved))editorProjects=saved.filter(p=>p&&typeof p==='object'&&p.text&&typeof p.text==='object');}catch{$('editorSaveStatus').textContent='專案紀錄無法讀取，請下載 HEX 保存。';}
 window.addEventListener('message',ev=>{
     if(ev.origin!==ORIGIN||ev.source!==$('makecode').contentWindow||!ev.data||ev.data.type!=='pxthost')return;
     const message=ev.data;
     if(message.action==='workspacesync'){
+        editorReady=true;
+        if($('loadFoundation'))$('loadFoundation').disabled=false;
         $('makecode').contentWindow.postMessage({...message,projects:editorProjects},ORIGIN);
     }else if(message.action==='workspacesave'&&message.project&&typeof message.project.text==='object'){
         const p=message.project,id=p.header?.id||p.id||'current';
@@ -48,6 +51,7 @@ function updateControls(){
 }
 GUIDE_STEPS.forEach((s,i)=>{const b=document.createElement('button');b.className='step-dot';b.setAttribute('aria-label',`第 ${i+1} 步：${s.title}`);b.addEventListener('click',()=>show(i));$('stepDots').append(b);});
 function renderImage(){
+    if($('loadFoundation'))$('loadFoundation').disabled=!editorReady;
     const s=GUIDE_STEPS[current],uri=images.get(current);
     $('diagram').classList.toggle('has-official',!!uri);
     $('officialBlocks').hidden=!uri;
@@ -75,9 +79,16 @@ $('stepCheck').addEventListener('change',()=>{
 $('layoutToggle').addEventListener('click',()=>{const compact=document.body.classList.toggle('compact');$('layoutToggle').textContent=compact?'恢復左右對照':'教學放大';$('layoutToggle').setAttribute('aria-pressed',String(compact));});
 $('originalCode').textContent=fullProgram;
 $('resetGuide').addEventListener('click',()=>{checked=[];show(0);$('storageStatus').textContent='已清除步驟勾選，右側 MakeCode 專案不受影響。';});
-const demo=COURSE_ID==='10'?createRecordModel():COURSE_ID==='08'?createClapModel():createBlowModel();
-if(COURSE_ID!=='10')for(let i=0;i<25;i++){const p=document.createElement('span');p.className='pixel';$('demoGrid').append(p);}
+const isCompass=['11','12'].includes(COURSE_ID);
+const demo=isCompass?createCompassModel():COURSE_ID==='10'?createRecordModel():COURSE_ID==='08'?createClapModel():createBlowModel();
+if(!isCompass&&COURSE_ID!=='10')for(let i=0;i<25;i++){const p=document.createElement('span');p.className='pixel';$('demoGrid').append(p);}
 function renderDemo(){
+    if(isCompass){
+        $('heading').value=String(demo.heading);$('headingValue').textContent=String(demo.heading);
+        $('compassDisplay').textContent=demo.display||'（畫面空白）';
+        $('demoStatus').textContent=`模式 ${demo.mode}：${demo.mode===0?'等待按 A 或 B':demo.mode===1?'電子羅盤':'抓寶'}${COURSE_ID==='12'?` · 出現 ${demo.found} · 分數 ${demo.score} · 寶物 ${demo.target}°（練習揭示）`:''}`;
+        return;
+    }
     if(COURSE_ID==='10'){
         const rows=demo.rows.map((row,i)=>{const tr=document.createElement('tr');for(const value of [i+1,row.Boy,row.Girl,row.Teacher]){const td=document.createElement('td');td.textContent=String(value);tr.append(td);}return tr;});
         $('recordRows').replaceChildren(...rows);
@@ -85,7 +96,22 @@ function renderDemo(){
     }
     [...$('demoGrid').children].forEach((p,i)=>p.classList.toggle('on',demo.pixels[i]));$('demoGrid').setAttribute('aria-label',`目前 ${demo.pixels.filter(Boolean).length} 顆 LED 亮起`);
 }
-if(COURSE_ID==='10'){
+if(isCompass){
+    $('compassA').addEventListener('click',()=>{demo.a();renderDemo();});
+    $('heading').addEventListener('input',()=>{demo.heading=Number($('heading').value);demo.tick();renderDemo();});
+    $('demoReset').addEventListener('click',()=>{demo.reset();renderDemo();});
+    if(COURSE_ID==='12'){
+        $('huntB').addEventListener('click',()=>{demo.b();renderDemo();});
+        $('huntLogo').addEventListener('click',()=>{demo.logo();renderDemo();});
+        $('setTarget').addEventListener('click',()=>{const value=Number($('target').value);if(Number.isInteger(value)&&value>=0&&value<=360){demo.target=value;demo.tick();renderDemo();}});
+        // 使用官方 controller 建立一份基礎專案，不跨課寫入學生原作品。
+        $('fallbackBlocks').addEventListener('click',ev=>{
+            if(ev.target.id!=='loadFoundation')return;
+            $('makecode').contentWindow.postMessage({type:'pxteditor',id:crypto.randomUUID(),action:'importproject',project:JSON.parse(JSON.stringify(FOUNDATION_PROJECT)),response:true},ORIGIN);
+            $('foundationStatus').textContent='已送出 L11 基礎專案，請確認右側出現羅盤積木後再打勾。';
+        });
+    }
+}else if(COURSE_ID==='10'){
     for(const [id,event] of [['recordA','A'],['recordB','B'],['recordLogo','Logo']])$(id).addEventListener('click',()=>{demo.record(event);renderDemo();$('demoStatus').textContent=`共 ${demo.rows.length} 筆練習紀錄；顯示圖示：${demo.icon}。`;});
     $('recordDelete').addEventListener('click',()=>{demo.deleteLog();renderDemo();$('demoStatus').textContent='A+B：練習紀錄已清除，顯示骷髏。';});
     $('demoReset').addEventListener('click',()=>{demo.reset();renderDemo();$('demoStatus').textContent='開機：三個欄位已建立，尚無紀錄。';});
@@ -111,6 +137,7 @@ function clearUsage(resetId,announce=false){
     if(resetId===lastResetId)return;
     lastResetId=resetId;
     editorProjects=[];
+    editorReady=false;
     const oldFrame=$('makecode');
     const cleanFrame=oldFrame.cloneNode(false);
     oldFrame.replaceWith(cleanFrame);
@@ -126,7 +153,7 @@ function clearUsage(resetId,announce=false){
     demo.reset();renderDemo();
     if($('trace'))$('trace').replaceChildren();
     if($('sound')){$('sound').value='180';$('soundValue').textContent='180';}
-    $('demoStatus').textContent=COURSE_ID==='10'?'開機：三個欄位已建立，尚無紀錄。':COURSE_ID==='08'?'開機：開關 = 0，燈是熄滅的。':'開機空白，先按 A。';
+    if(!isCompass)$('demoStatus').textContent=COURSE_ID==='10'?'開機：三個欄位已建立，尚無紀錄。':COURSE_ID==='08'?'開機：開關 = 0，燈是熄滅的。':'開機空白，先按 A。';
     $('storageStatus').textContent='';
     $('editorSaveStatus').textContent='正在開啟空白練習區…';
     $('clearStatus').textContent=storageCleared?'已清除本站各課進度與積木。':'已重設目前畫面，但瀏覽器未允許清除存檔。';
