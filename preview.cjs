@@ -98,5 +98,6 @@ files['/assets/08advanced/step-5.png']='assets/08advanced/step-5.png';
 files['/assets/08advanced/step-6.png']='assets/08advanced/step-6.png';
 files['/assets/08advanced/step-7.png']='assets/08advanced/step-7.png';
 files['/sim-foundations.js']='sim-foundations.js';
-const mime = {'.png':'image/png','.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8'};
+for(const name of fs.readdirSync(path.join(__dirname,'assets/cover')))files['/assets/cover/'+name]='assets/cover/'+name;
+const mime = {'.svg':'image/svg+xml','.png':'image/png','.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8'};
 http.createServer((req,res)=>{const name=files[decodeURIComponent(new URL(req.url,'http://127.0.0.1').pathname)];if(!name){res.writeHead(404);res.end('Not found');return;}fs.readFile(path.join(__dirname,name),(err,data)=>{if(err){res.writeHead(500);res.end('Read error');return;}res.writeHead(200,{'Content-Type':mime[path.extname(name)] || 'application/octet-stream','Cache-Control':'no-store'});res.end(data);});}).listen(4173,'127.0.0.1',()=>console.log('Local: http://127.0.0.1:4173'));
