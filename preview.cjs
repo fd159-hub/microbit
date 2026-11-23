@@ -6,10 +6,6 @@ const files = {'/':'index.html','/guided.css':'guided.css','/guided.js':'guided.
 for(let i=1;i<=7;i++) files['/assets/step-'+i+'.png']='assets/step-'+i+'.png';
 files['/lesson08.html']='lesson08.html';files['/lessons08.js']='lessons08.js';files['/guide-steps08.js']='guide-steps08.js';files['/sim08.js']='sim08.js';files['/materials/08/microbit-08拍手燈.hex']='materials/08/microbit-08拍手燈.hex';for(let i=1;i<=7;i++)files['/assets/08/step-'+i+'.png']='assets/08/step-'+i+'.png';
 files['/lesson09.html']='lesson09.html';files['/cover.css']='cover.css';
+files['/lesson10.html']='lesson10.html';files['/lessons10.js']='lessons10.js';files['/guide-steps10.js']='guide-steps10.js';files['/sim10.js']='sim10.js';for(let i=1;i<=7;i++)files['/assets/10/step-'+i+'.png']='assets/10/step-'+i+'.png';
 const mime = {'.png':'image/png','.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8'};
 http.createServer((req,res)=>{const name=files[decodeURIComponent(new URL(req.url,'http://127.0.0.1').pathname)];if(!name){res.writeHead(404);res.end('Not found');return;}fs.readFile(path.join(__dirname,name),(err,data)=>{if(err){res.writeHead(500);res.end('Read error');return;}res.writeHead(200,{'Content-Type':mime[path.extname(name)] || 'application/octet-stream','Cache-Control':'no-store'});res.end(data);});}).listen(4173,'127.0.0.1',()=>console.log('Local: http://127.0.0.1:4173'));
-
-
-
-
-

@@ -6,3 +6,4 @@
 .course-select{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}.course-select select{font:inherit;padding:8px;border:1px solid var(--line);background:white;border-radius:7px;color:var(--ink)}
 .clear-usage{border-color:#d1ada1;color:#8d3f29}.clear-usage:hover{background:#fff0e8}.progress-status{display:flex;flex-direction:column;align-items:flex-end;font-size:12px}.progress-status .status{min-height:0}
 .prep-flow{color:var(--ink)}
+.data-category{background:#007b83}.nest.data-category-border{border-color:#007b83}.record-buttons{display:flex;flex-wrap:wrap;gap:8px}.record-table{overflow:auto;max-height:330px}.record-table table{width:100%;border-collapse:collapse;font-size:14px}.record-table th,.record-table td{border:1px solid var(--line);padding:8px;text-align:center}.record-table th{background:#eef3e8}.record-table caption{text-align:left;font-weight:600;padding:10px 0}

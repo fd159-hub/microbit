@@ -8,34 +8,35 @@
 
 - **08 拍手燈**：大聲事件、開關變數、如果／否則。一次事件亮燈，再一次事件熄燈。
 - **09 吹走**：音量、隨機座標、LED 點陣。亮點向上移動。
+- **10 校園紀錄**：官方 datalogger 擴展、按鈕與 Logo 事件，依 Boy／Girl／Teacher 欄名逐筆記錄；A+B 清除資料。
 
-兩課均有八個圖解步驟。檢查並打勾後才能前進；無法從上方進度列跳過檢查。可返回查看，取消先前勾選會重新鎖定後續步驟。
+各課均有八個圖解步驟。檢查並打勾後才能前進；無法從上方進度列跳過檢查。可返回查看，取消先前勾選會重新鎖定後續步驟。
 
 ## 學生操作
 
 1. 選課，等待右側 MakeCode 載入。
 2. 看左側指令與積木圖，在右側工具箱組合。
 3. 檢查這一步、打勾，按「下一步」。
-4. 換人前按「清除使用痕跡」，清除本站兩課進度、小實驗與內嵌 MakeCode 練習專案。
+4. 換人前按「清除使用痕跡」，清除本站各課進度、小實驗與內嵌 MakeCode 練習專案。
 
 右側若被瀏覽器或校園網路限制，可另開 MakeCode 並排操作；另開視窗的專案是獨立的，不會自動同步或被本站清除。
 
 ## 儲存與使用限制
 
 - 不用登入，不收集姓名、座號或成績；檢查勾選代表學生自我確認，不是自動評分。
-- 進度與兩課的練習作品分別保存在目前瀏覽器 localStorage，沒有跨裝置同步。
+- 進度與各課的練習作品分別保存在目前瀏覽器 localStorage，沒有跨裝置同步。
 - 一鍵清除只處理本站資料，不會清除瀏覽器歷史、已下載檔案或官方 MakeCode 網站內的其他專案。同站的新版分頁會同步重設。
-- 實體操作需 micro:bit V2，兩課均使用內建麥克風。程式判斷聲音大小，不是拍手或吹氣辨識器。
+- 實體操作需 micro:bit V2，第 08、09 課使用內建麥克風，程式判斷聲音大小；第 10 課使用資料記錄器與 Logo 觸控。
 - 小實驗是概念練習，不會執行右側學生程式，也不代表實機速度或事件觸發次數。
 - MakeCode 需要網路；官方積木圖已隨網站保存。
 
 ## 維護與預覽
 
 - 封面：index.html、cover.css。
-- 課程頁：lesson08.html、lesson09.html。
-- 教學步驟：guide-steps08.js、guide-steps.js。
-- 操作邏輯：guided.js；小實驗：sim08.js、sim09.js。
-- 上課原始程式資料：lessons08.js、lessons.js。
+- 課程頁：lesson08.html、lesson09.html、lesson10.html。
+- 教學步驟：guide-steps08.js、guide-steps.js、guide-steps10.js。
+- 操作邏輯：guided.js；小實驗：sim08.js、sim09.js、sim10.js。
+- 上課原始程式資料：lessons08.js、lessons.js、lessons10.js。
 - 積木圖片：assets/08/ 與 assets/。修改片段時需同步重製積木圖。
 - 使用 Node.js 執行 node preview.cjs，開啟 http://127.0.0.1:4173/ 。不需安裝套件。
 - main 分支更新後，由 .github/workflows/pages.yml 部署到 GitHub Pages。
@@ -50,3 +51,5 @@
 - [LED 座標](https://makecode.microbit.org/reference/led/plot)
 
 本站非 micro:bit 官方網站。
+
+第 10 課每次 log 新增一筆資料，未提供的欄位留空；不是將同一格累加。A+B 使用 deleteLog() 預設 Fast 模式，正式紀錄應先保存。原始 HEX 與實機資料不加入公開來源。

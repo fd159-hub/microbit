@@ -75,10 +75,22 @@ $('stepCheck').addEventListener('change',()=>{
 $('layoutToggle').addEventListener('click',()=>{const compact=document.body.classList.toggle('compact');$('layoutToggle').textContent=compact?'恢復左右對照':'教學放大';$('layoutToggle').setAttribute('aria-pressed',String(compact));});
 $('originalCode').textContent=fullProgram;
 $('resetGuide').addEventListener('click',()=>{checked=[];show(0);$('storageStatus').textContent='已清除步驟勾選，右側 MakeCode 專案不受影響。';});
-const demo=COURSE_ID==='08'?createClapModel():createBlowModel();
-for(let i=0;i<25;i++){const p=document.createElement('span');p.className='pixel';$('demoGrid').append(p);}
-function renderDemo(){[...$('demoGrid').children].forEach((p,i)=>p.classList.toggle('on',demo.pixels[i]));$('demoGrid').setAttribute('aria-label',`目前 ${demo.pixels.filter(Boolean).length} 顆 LED 亮起`);}
-if(COURSE_ID==='08'){
+const demo=COURSE_ID==='10'?createRecordModel():COURSE_ID==='08'?createClapModel():createBlowModel();
+if(COURSE_ID!=='10')for(let i=0;i<25;i++){const p=document.createElement('span');p.className='pixel';$('demoGrid').append(p);}
+function renderDemo(){
+    if(COURSE_ID==='10'){
+        const rows=demo.rows.map((row,i)=>{const tr=document.createElement('tr');for(const value of [i+1,row.Boy,row.Girl,row.Teacher]){const td=document.createElement('td');td.textContent=String(value);tr.append(td);}return tr;});
+        $('recordRows').replaceChildren(...rows);
+        return;
+    }
+    [...$('demoGrid').children].forEach((p,i)=>p.classList.toggle('on',demo.pixels[i]));$('demoGrid').setAttribute('aria-label',`目前 ${demo.pixels.filter(Boolean).length} 顆 LED 亮起`);
+}
+if(COURSE_ID==='10'){
+    for(const [id,event] of [['recordA','A'],['recordB','B'],['recordLogo','Logo']])$(id).addEventListener('click',()=>{demo.record(event);renderDemo();$('demoStatus').textContent=`共 ${demo.rows.length} 筆練習紀錄；顯示圖示：${demo.icon}。`;});
+    $('recordDelete').addEventListener('click',()=>{demo.deleteLog();renderDemo();$('demoStatus').textContent='A+B：練習紀錄已清除，顯示骷髏。';});
+    $('demoReset').addEventListener('click',()=>{demo.reset();renderDemo();$('demoStatus').textContent='開機：三個欄位已建立，尚無紀錄。';});
+    $('demoStatus').textContent='開機：三個欄位已建立，尚無紀錄。';
+}else if(COURSE_ID==='08'){
     $('demoClap').addEventListener('click',()=>{demo.loudEvent();renderDemo();$('demoStatus').textContent=`開關 = ${demo.state} → ${demo.state===1?'亮燈':'熄燈'}`;});
     $('demoReset').addEventListener('click',()=>{demo.reset();renderDemo();$('demoStatus').textContent='開機：開關 = 0，燈是熄滅的。';});
     $('demoStatus').textContent='開機：開關 = 0，燈是熄滅的。';
@@ -87,7 +99,7 @@ $('demoA').addEventListener('click',()=>{demo.fill();renderDemo();$('demoStatus'
 $('sound').addEventListener('input',()=>{$('soundValue').textContent=$('sound').value;});$('demoRound').addEventListener('click',()=>{const level=Number($('sound').value);const log=demo.round(level);renderDemo();$('demoStatus').textContent=level<=180?'還不夠大聲！要超過 180 才會動。':`完成一輪，目前 ${demo.pixels.filter(Boolean).length} 顆亮起。`;$('trace').replaceChildren(...log.map(r=>{const li=document.createElement('li');li.textContent=r.kind==='quiet'?'音量 ≤ 180，不動作。':r.kind==='empty'?`(${r.x}, ${r.y}) 沒有亮點，略過。`:r.kind==='out'?`(${r.x}, 0) → 移出上緣。`:`(${r.x}, ${r.y}) → (${r.x}, ${r.destination})`;return li;}));});
 }
 if($('courseSelect')){
-    $('courseSelect').value=COURSE_ID==='08'?'lesson08.html':'lesson09.html';
+    $('courseSelect').value=`lesson${COURSE_ID}.html`;
     $('courseSelect').addEventListener('change',()=>{save();window.location.href=$('courseSelect').value;});
 }
 // 同站分頁一併重設；替換 iframe，避免舊編輯器的延遲存檔寫回已清除的內容。
@@ -114,15 +126,13 @@ function clearUsage(resetId,announce=false){
     demo.reset();renderDemo();
     if($('trace'))$('trace').replaceChildren();
     if($('sound')){$('sound').value='180';$('soundValue').textContent='180';}
-    $('demoStatus').textContent=COURSE_ID==='08'?'開機：開關 = 0，燈是熄滅的。':'開機空白，先按 A。';
+    $('demoStatus').textContent=COURSE_ID==='10'?'開機：三個欄位已建立，尚無紀錄。':COURSE_ID==='08'?'開機：開關 = 0，燈是熄滅的。':'開機空白，先按 A。';
     $('storageStatus').textContent='';
     $('editorSaveStatus').textContent='正在開啟空白練習區…';
-    $('clearStatus').textContent=storageCleared?'已清除本站兩課進度與積木。':'已重設目前畫面，但瀏覽器未允許清除存檔。';
+    $('clearStatus').textContent=storageCleared?'已清除本站各課進度與積木。':'已重設目前畫面，但瀏覽器未允許清除存檔。';
     if(announce&&resetChannel)resetChannel.postMessage({type:'clear-usage',id:resetId});
 }
 $('clearUsage').addEventListener('click',()=>clearUsage(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36),true));
 window.addEventListener('storage',ev=>{if(ev.key===RESET_SIGNAL&&ev.newValue)clearUsage(ev.newValue);});
 if(resetChannel)resetChannel.addEventListener('message',ev=>{if(ev.data?.type==='clear-usage'&&typeof ev.data.id==='string')clearUsage(ev.data.id);});
 show(current);renderDemo();
-
-
