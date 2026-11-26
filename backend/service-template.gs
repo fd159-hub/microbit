@@ -7,7 +7,7 @@ const TEACHER_FILES = __TEACHER_FILES__;
 function render_(html) {
   // HtmlService 會重新分析 inline JavaScript，部分課程的樣板字串使網址被截斷。
   // 保留外部 defer script 的原始順序，直接載入公開且不含教師資料的程式檔。
-  html=html.replace(/<script src="([^"?]+)(?:\?[^\"]*)?" defer><\/script>/g,function(_,name){return '<script src="https://fd159-hub.github.io/microbit/'+name+'?v=resume-20261126-1" defer><\/script>';});
+  html=html.replace(/<script src="([^"?]+)(?:\?[^\"]*)?" defer><\/script>/g,function(_,name){return '<script src="https://fd159-hub.github.io/microbit/'+name+'?v=demo-20261126-1" defer><\/script>';});
   html=html.replace(/<link rel="stylesheet" href="([^"?]+)(?:\?[^\"]*)?">/g,function(_,name){return '<style>'+TEACHER_FILES[name]+'</style>';});
   return html;
 }

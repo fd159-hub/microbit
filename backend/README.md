@@ -21,3 +21,6 @@
 
 ## 教師課程載入
 教師頁面使用外部 defer JavaScript 檔，維持原有載入順序，避免 HtmlService 改寫課程樣板字串。更新 JavaScript 時先發布 GitHub Pages，再更新 Apps Script。執行 node backend/verify-render.cjs 檢查14個頁面的來源與依賴順序。
+
+## 接續上課的示範積木
+先執行 node backend/build-teacher-snapshots.cjs，再執行 build-service.cjs。teacher-snapshots.js 依各課教學步驟累積程式；完成最後一步時與完整教材程式一致。教師頁等待官方 workspaceloaded 後另建示範專案，並切換至積木。只在進入課程時自動建立一次；按「重建已完成積木」可依目前勾選重建。既有本機專案不刪除，學生模式維持原流程。示範程式可跨電腦重新建立，但教師自行修改的 MakeCode 作品仍只存目前瀏覽器。

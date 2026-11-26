@@ -4,7 +4,14 @@
     if(!active){root.TeacherLesson={active:false};return;}
     const term=root.TEACHER_CONFIG.term||'上',year=Number(root.TEACHER_CONFIG.year),classId=root.TEACHER_CONFIG.classId,valid=TeacherCatalog.validScope(year,classId,term)&&TeacherCatalog.courses.some(c=>c.id===root.TEACHER_CONFIG.courseId&&c.year===year&&c.term===term);
     let bridge=null,record=null,ready=false,applying=false,generation=0,savedGeneration=0,timer=null,writing=null,failed=false;
-    let banner,status,saveButton,reloadButton,workspace;
+    let banner,status,saveButton,reloadButton,workspace,demoStatus,demoButton,demoStarted=false;
+    async function prepareDemo(force=false){
+        if(!ready||!record||!bridge?.isEditorReady()||(!force&&demoStarted))return;
+        demoStarted=true;demoButton.disabled=true;demoStatus.classList.remove('error');demoStatus.textContent='正在建立已完成步驟的積木…';
+        try{const count=record.checked.length,project=TeacherSnapshots.project(bridge.courseId,count,{year,term,classId});await bridge.importProject(project);demoStatus.textContent=`已載入完成第 ${count} 步的示範積木；原有專案保留。`;}
+        catch(error){demoStatus.textContent=error.message;demoStatus.classList.add('error');}
+        finally{demoButton.disabled=false;}
+    }
     function say(text,error=false){if(status){status.textContent=text;status.classList.toggle('error',error);}}
     function lock(value){if(workspace)workspace.inert=value;const select=document.getElementById('courseSelect');if(select)select.disabled=value;}
     function onChange(snapshot){
@@ -29,7 +36,7 @@
         if(!valid){say('學年度或班級不正確，請返回教師專區重新選擇。',true);return;}
         if(!TeacherClient.loggedIn()){say('請先登入教師專區，再接續這一班的課程。',true);return;}
         ready=false;lock(true);say('正在讀取本班雲端進度…');
-        try{const records=await TeacherClient.read(year,classId,term);record=TeacherCatalog.normalize(records.find(r=>r.courseId===bridge.courseId)||TeacherCatalog.empty(year,classId,bridge.courseId,term));applying=true;bridge.restore(record);applying=false;generation=0;savedGeneration=0;failed=false;ready=true;reloadButton.hidden=true;lock(false);say(record.updatedAt?'已載入本班雲端進度':'本班尚未開始這一課');}
+        try{const records=await TeacherClient.read(year,classId,term);record=TeacherCatalog.normalize(records.find(r=>r.courseId===bridge.courseId)||TeacherCatalog.empty(year,classId,bridge.courseId,term));applying=true;bridge.restore(record);applying=false;generation=0;savedGeneration=0;failed=false;ready=true;reloadButton.hidden=true;lock(false);say(record.updatedAt?'已載入本班雲端進度':'本班尚未開始這一課');prepareDemo();}
         catch(error){applying=false;say(error.message,true);}
     }
     async function navigate(url){if(await flush())location.href=urlForCourse(url);}
@@ -46,12 +53,13 @@
         saveButton=document.createElement('button');saveButton.className='button';saveButton.textContent='立即同步';saveButton.addEventListener('click',()=>{if(!ready)load();else flush();});
         reloadButton=document.createElement('button');reloadButton.className='button';reloadButton.textContent='重新載入雲端';reloadButton.hidden=true;reloadButton.title='捨棄本視窗尚未同步的修改，改用雲端最新進度';reloadButton.addEventListener('click',()=>load());
         banner.append(label,status,saveButton,reloadButton,manage);document.querySelector('.topline').after(banner);
+        const demoPanel=document.createElement('div');demoPanel.className='teacher-demo-panel';demoStatus=document.createElement('span');demoStatus.setAttribute('role','status');demoStatus.textContent='等待 MakeCode 載入已完成步驟的積木…';demoButton=document.createElement('button');demoButton.className='button';demoButton.textContent='重建已完成積木';demoButton.addEventListener('click',()=>prepareDemo(true));demoPanel.append(demoStatus,demoButton);document.querySelector('.editor-toolbar').after(demoPanel);
         document.getElementById('clearUsage').hidden=true;document.getElementById('resetGuide').hidden=true;
         document.getElementById('courseSelect').closest('label').hidden=true;
         const storageStatus=document.getElementById('storageStatus');storageStatus.textContent='教師教學進度保存在雲端；MakeCode 作品依本機班級分開保存。';
         const studentFooter=document.querySelector('footer');studentFooter.textContent='教師模式 · 教學進度跨電腦同步 · MakeCode 作品保存在目前瀏覽器';
         lock(true);load();
     }
-    root.TeacherLesson={active,year,classId,onChange,attach,navigate,urlForCourse,projectKey:course=>`microbit-teacher-projects-${root.TEACHER_CONFIG.userId}-${year}-${classId}-${course}${term==='下'?'-lower':''}-v1`};
+    root.TeacherLesson={active,year,classId,onChange,attach,navigate,urlForCourse,editorReady:()=>prepareDemo(),projectKey:course=>`microbit-teacher-projects-${root.TEACHER_CONFIG.userId}-${year}-${classId}-${course}${term==='下'?'-lower':''}-v1`};
     root.addEventListener('beforeunload',event=>{if(savedGeneration<generation){event.preventDefault();event.returnValue='';}});
 })(window);

@@ -13,14 +13,21 @@ const images=new Map(Array.from({length:GUIDE_STEPS.length-1},(_,i)=>[i+1,COURSE
 const PROJECT_KEY=teacherContext?teacherContext.projectKey(COURSE_ID):`microbit${COURSE_ID}-makecode-projects-v1`;
 let editorProjects=[];
 let editorReady=false;
+const editorRequests=new Map();
+function editorCommand(action,body={}){
+    return new Promise((resolve,reject)=>{const id=crypto.randomUUID(),timer=setTimeout(()=>{editorRequests.delete(id);reject(new Error('MakeCode 回應逾時，請稍後按「重建已完成積木」。'));},45000);editorRequests.set(id,{resolve,reject,timer});$('makecode').contentWindow.postMessage({type:'pxteditor',id,action,...body,response:true},ORIGIN);});
+}
 try{const saved=JSON.parse((teacherContext&&!TeacherClient.loggedIn()?'[]':localStorage.getItem(PROJECT_KEY))||'[]');if(Array.isArray(saved))editorProjects=saved.filter(p=>p&&typeof p==='object'&&p.text&&typeof p.text==='object');}catch{$('editorSaveStatus').textContent='專案紀錄無法讀取，請下載 HEX 保存。';}
 window.addEventListener('message',ev=>{
-    if(ev.origin!==ORIGIN||ev.source!==$('makecode').contentWindow||!ev.data||ev.data.type!=='pxthost')return;
+    if(ev.origin!==ORIGIN||ev.source!==$('makecode').contentWindow||!ev.data)return;
+    if(ev.data.type==='pxteditor'){const request=editorRequests.get(ev.data.id);if(request){clearTimeout(request.timer);editorRequests.delete(ev.data.id);if(ev.data.success)request.resolve(ev.data.resp);else request.reject(new Error('MakeCode 無法載入示範專案，請稍後重試。'));}return;}
+    if(ev.data.type!=='pxthost')return;
     const message=ev.data;
     if(message.action==='workspacesync'){
         editorReady=true;
         if($('loadFoundation'))$('loadFoundation').disabled=false;
         $('makecode').contentWindow.postMessage({...message,projects:editorProjects},ORIGIN);
+        if(teacherContext)teacherContext.editorReady();
     }else if(message.action==='workspacesave'&&message.project&&typeof message.project.text==='object'){
         const p=message.project,id=p.header?.id||p.id||'current';
         const index=editorProjects.findIndex(q=>(q.header?.id||q.id||'current')===id);
@@ -179,4 +186,4 @@ window.addEventListener('storage',ev=>{if(ev.key===RESET_SIGNAL&&ev.newValue)cle
 if(resetChannel)resetChannel.addEventListener('message',ev=>{if(ev.data?.type==='clear-usage'&&typeof ev.data.id==='string')clearUsage(ev.data.id);});
 show(current);renderDemo();
 
-if(teacherContext)teacherContext.attach({courseId:COURSE_ID,restore(record){checked=[...record.checked];current=record.current;show(current);}});
+if(teacherContext)teacherContext.attach({courseId:COURSE_ID,isEditorReady:()=>editorReady,async importProject(project){await editorCommand('importproject',{project});await new Promise(resolve=>setTimeout(resolve,800));await editorCommand('switchblocks');},restore(record){checked=[...record.checked];current=record.current;show(current);}});
