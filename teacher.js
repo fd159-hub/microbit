@@ -17,7 +17,7 @@
         catch(error){message(card.status,error.message,true);return false;}
         finally{card.busy=false;card.save.disabled=false;card.resume.disabled=false;}
     }
-    function renderSummary(card){const n=card.record.checked.length,total=card.course.steps.length;card.summary.textContent=n===total?'本課已完成':n===0?'尚未開始':`已完成 ${n} / ${total} 步`;card.updated.textContent=`更新：${time(card.record.updatedAt)}`;}
+    function renderSummary(card){const n=Number(card.select.value),total=card.course.steps.length;card.article.dataset.progress=n===total?'completed':n===0?'not-started':'in-progress';card.summary.textContent=n===total?'已完成':n===0?'尚未開始':`進行中 · 已完成 ${n} / ${total} 步`;card.updated.textContent=`更新：${time(card.record.updatedAt)}`;}
     function renderCourse(course,record){
         const article=document.createElement('article');article.className='progress-card';article.dataset.course=course.id;
         const number=document.createElement('span');number.className='course-number';number.textContent=`LESSON ${course.label}`;
@@ -32,7 +32,7 @@
         const updated=document.createElement('p');updated.className='updated';const status=document.createElement('p');status.setAttribute('role','status');
         article.append(number,title,summary,selectLabel,noteLabel,actions,updated,status);
         const card={course,record,select,note,save,resume,summary,updated,status,article,busy:false};cards.set(course.id,card);renderSummary(card);
-        const mark=()=>{if(fieldsChanged(card)){dirty.add(course.id);message(status,'已修改，請儲存進度。');}else{dirty.delete(course.id);message(status,'');}};
+        const mark=()=>{renderSummary(card);if(fieldsChanged(card)){dirty.add(course.id);message(status,'已修改，請儲存進度。');}else{dirty.delete(course.id);message(status,'');}};
         select.addEventListener('change',mark);note.addEventListener('input',mark);save.addEventListener('click',()=>saveCard(card));
         resume.addEventListener('click',event=>{if(card.busy||fieldsChanged(card)){event.preventDefault();message(card.status,'請先儲存這一課的修改，再接續上課。',true);}});
         return article;
