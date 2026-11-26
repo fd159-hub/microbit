@@ -2,6 +2,7 @@
 const $=id=>document.getElementById(id);
 const COURSE_ID=document.body.dataset.lesson||'09';
 const COURSE_LABEL=document.body.dataset.courseLabel||COURSE_ID;
+const teacherContext=window.TeacherLesson?.active?window.TeacherLesson:null;
 const KEY=`microbit${COURSE_ID}-guided-v1`;
 const ORIGIN='https://makecode.microbit.org';
 let current=0,checked=[];
@@ -9,10 +10,10 @@ let current=0,checked=[];
 const images=new Map(Array.from({length:GUIDE_STEPS.length-1},(_,i)=>[i+1,COURSE_ID==='09'?`assets/step-${i+1}.png`:`assets/${COURSE_ID}/step-${i+1}.png`]));
 // MakeCode 官方 controller 協定：內嵌完整編輯器由本頁提供本機專案儲存。
 // 僅接受指定 iframe 與官方 origin，不向外部服務同步學生程式。
-const PROJECT_KEY=`microbit${COURSE_ID}-makecode-projects-v1`;
+const PROJECT_KEY=teacherContext?teacherContext.projectKey(COURSE_ID):`microbit${COURSE_ID}-makecode-projects-v1`;
 let editorProjects=[];
 let editorReady=false;
-try{const saved=JSON.parse(localStorage.getItem(PROJECT_KEY)||'[]');if(Array.isArray(saved))editorProjects=saved.filter(p=>p&&typeof p==='object'&&p.text&&typeof p.text==='object');}catch{$('editorSaveStatus').textContent='專案紀錄無法讀取，請下載 HEX 保存。';}
+try{const saved=JSON.parse((teacherContext&&!TeacherClient.loggedIn()?'[]':localStorage.getItem(PROJECT_KEY))||'[]');if(Array.isArray(saved))editorProjects=saved.filter(p=>p&&typeof p==='object'&&p.text&&typeof p.text==='object');}catch{$('editorSaveStatus').textContent='專案紀錄無法讀取，請下載 HEX 保存。';}
 window.addEventListener('message',ev=>{
     if(ev.origin!==ORIGIN||ev.source!==$('makecode').contentWindow||!ev.data||ev.data.type!=='pxthost')return;
     const message=ev.data;
@@ -28,8 +29,8 @@ window.addEventListener('message',ev=>{
         catch{$('editorSaveStatus').textContent='無法保留專案，離開前請下載 HEX。';}
     }
 });
-try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');current=Number.isInteger(saved.current)&&saved.current>=0&&saved.current<GUIDE_STEPS.length?saved.current:0;checked=Array.isArray(saved.checked)?saved.checked.filter(x=>Number.isInteger(x)&&x>=0&&x<GUIDE_STEPS.length):[];}catch{$('storageStatus').textContent='瀏覽器無法保留紀錄，仍可照常上課。';}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({current,checked}));}catch{$('storageStatus').textContent='無法儲存步驟紀錄。';}}
+try{const saved=JSON.parse((teacherContext?null:localStorage.getItem(KEY))||'{}');current=Number.isInteger(saved.current)&&saved.current>=0&&saved.current<GUIDE_STEPS.length?saved.current:0;checked=Array.isArray(saved.checked)?saved.checked.filter(x=>Number.isInteger(x)&&x>=0&&x<GUIDE_STEPS.length):[];}catch{$('storageStatus').textContent='瀏覽器無法保留紀錄，仍可照常上課。';}
+function save(){if(teacherContext){teacherContext.onChange({current,checked:[...checked]});return;}try{localStorage.setItem(KEY,JSON.stringify({current,checked}));}catch{$('storageStatus').textContent='無法儲存步驟紀錄。';}}
 // 只能前往第一個尚未確認的步驟；舊版跳著勾選的紀錄只保留連續完成的部分。
 function unlockedStep(){const first=GUIDE_STEPS.findIndex((_,i)=>!checked.includes(i));return first===-1?GUIDE_STEPS.length-1:first;}
 let completedPrefix=0;
@@ -139,7 +140,7 @@ $('sound').addEventListener('input',()=>{$('soundValue').textContent=$('sound').
 }
 if($('courseSelect')){
     $('courseSelect').value=`lesson${COURSE_ID}.html`;
-    $('courseSelect').addEventListener('change',()=>{save();window.location.href=$('courseSelect').value;});
+    $('courseSelect').addEventListener('change',()=>{save();if(teacherContext)teacherContext.navigate($('courseSelect').value);else window.location.href=$('courseSelect').value;});
 }
 // 同站分頁一併重設；替換 iframe，避免舊編輯器的延遲存檔寫回已清除的內容。
 const RESET_SIGNAL='microbit-classroom-reset-event';
@@ -147,6 +148,7 @@ let resetChannel=null,lastResetId='';
 try{lastResetId=localStorage.getItem(RESET_SIGNAL)||'';}catch{}
 try{resetChannel=new BroadcastChannel('microbit-classroom-reset');}catch{}
 function clearUsage(resetId,announce=false){
+    if(teacherContext)return;
     if(resetId===lastResetId)return;
     lastResetId=resetId;
     editorProjects=[];
@@ -176,3 +178,5 @@ $('clearUsage').addEventListener('click',()=>clearUsage(crypto.randomUUID?crypto
 window.addEventListener('storage',ev=>{if(ev.key===RESET_SIGNAL&&ev.newValue)clearUsage(ev.newValue);});
 if(resetChannel)resetChannel.addEventListener('message',ev=>{if(ev.data?.type==='clear-usage'&&typeof ev.data.id==='string')clearUsage(ev.data.id);});
 show(current);renderDemo();
+
+if(teacherContext)teacherContext.attach({courseId:COURSE_ID,restore(record){checked=[...record.checked];current=record.current;show(current);}});

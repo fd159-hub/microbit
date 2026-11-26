@@ -3,3 +3,5 @@
 
 /* 每課獨立情境插圖；以 SVG 保持投影、手機與高解析度螢幕清晰。 */
 .course-art.illustrated{height:auto;aspect-ratio:9/5;display:block;overflow:hidden;background:#e8eee2}.course-art.illustrated img{display:block;width:100%;height:100%;object-fit:contain}.course:hover .illustrated img{filter:saturate(1.04)}
+
+.teacher-home-tools{display:flex;align-items:center;gap:18px}.teacher-entry{display:inline-flex;align-items:center;border:1px solid #b8cbb3;border-radius:9px;background:white;color:#286c51;padding:7px 13px;font-size:14px;font-weight:650;white-space:nowrap}
