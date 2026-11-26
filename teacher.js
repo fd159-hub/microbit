@@ -6,7 +6,7 @@
     const dirty=new Set(),cards=new Map();
     const time=value=>value?new Date(value).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false}):'尚無雲端紀錄';
     const message=(el,text,error=false)=>{el.textContent=text;el.classList.toggle('error',error);};
-    function showLogin(){ $('dashboard').hidden=true;$('passwordPanel').hidden=true;$('accountActions').hidden=true;$('loginPanel').hidden=false; }
+    function showLogin(){ $('dashboard').hidden=true;message($('loginStatus'),'無法確認登入帳號，請重新開啟教師入口。',true); }
     function setBusy(value){$('loadScope').disabled=value;$('schoolYear').disabled=value;$('classId').disabled=value;$('courseProgress').inert=value;}
     function fieldsChanged(card){const record=card.record;return Number(card.select.value)!==record.checked.length||card.note.value!==record.note;}
     function editedRecord(card){const count=Number(card.select.value),record=card.record;return C.normalize({...record,checked:Array.from({length:count},(_,i)=>i),current:count===record.checked.length?record.current:Math.min(count,card.course.steps.length-1),note:card.note.value});}
@@ -44,22 +44,16 @@
         const version=++loadVersion;setBusy(true);message($('cloudStatus'),'正在讀取雲端進度…');
         try{const records=await A.read(year,classId);if(version!==loadVersion)return;activeScope={year,classId};cards.clear();$('scopeTitle').textContent=`${year} 學年度 · ${classId} 班`;
             const byId=new Map(records.map(r=>[r.courseId,C.normalize(r)]));$('courseProgress').replaceChildren(...C.courses.map(course=>renderCourse(course,byId.get(course.id)||C.empty(year,classId,course.id))));
-            try{localStorage.setItem('microbit-teacher-scope-v1',JSON.stringify(activeScope));}catch{}
+            try{localStorage.setItem('microbit-teacher-scope-v2-'+TEACHER_CONFIG.userId,JSON.stringify(activeScope));}catch{}
             message($('cloudStatus'),'已讀取雲端進度');
         }catch(error){message($('cloudStatus'),error.message,true);if(error.code==='SESSION')showLogin();}finally{if(version===loadVersion)setBusy(false);}
     }
-    async function openDashboard(){ $('loginPanel').hidden=true;$('dashboard').hidden=false;$('accountActions').hidden=false;await loadScope(); }
+    async function openDashboard(){ $('dashboard').hidden=false;await loadScope(); }
     const params=new URLSearchParams({year:String(TEACHER_CONFIG.year||''),class:TEACHER_CONFIG.classId||''});let preferred;try{preferred=JSON.parse(localStorage.getItem('microbit-teacher-scope-v1')||'null');}catch{}
     const proposed={year:Number(params.get('year')||preferred?.year||115),classId:params.get('class')||preferred?.classId||'601'};
     if(C.validScope(proposed.year,proposed.classId)){$('schoolYear').value=String(proposed.year);$('classId').value=proposed.classId;}
     const currentYear=new Date().getFullYear()-1911;for(let year=115;year<=Math.max(118,currentYear+2);year++){const option=document.createElement('option');option.value=String(year);$('yearChoices').append(option);}
-    $('loginForm').addEventListener('submit',async event=>{event.preventDefault();$('loginButton').disabled=true;message($('loginStatus'),'正在登入…');const password=$('password').value;$('password').value='';try{await A.login(password);message($('loginStatus'),'');await openDashboard();}catch(error){message($('loginStatus'),error.message,true);$('password').focus();}finally{$('loginButton').disabled=false;}});
     $('loadScope').addEventListener('click',loadScope);
-    $('logout').addEventListener('click',async()=>{if(dirty.size){message($('cloudStatus'),'請先儲存已修改的課程，再登出。',true);return;}$('logout').disabled=true;try{await A.logout();showLogin();}finally{$('logout').disabled=false;}});
-    $('changePasswordToggle').addEventListener('click',()=>{$('passwordPanel').hidden=!$('passwordPanel').hidden;if(!$('passwordPanel').hidden)$('currentPassword').focus();});
-    $('passwordCancel').addEventListener('click',()=>{$('passwordPanel').hidden=true;$('passwordForm').reset();message($('passwordStatus'),'');});
-    $('passwordForm').addEventListener('submit',async event=>{event.preventDefault();if($('newPassword').value!==$('confirmPassword').value){message($('passwordStatus'),'兩次新密碼不相同。',true);return;}$('passwordSave').disabled=true;const old=$('currentPassword').value,next=$('newPassword').value;$('passwordForm').reset();message($('passwordStatus'),'正在變更密碼…');try{await A.changePassword(old,next);message($('passwordStatus'),'教師密碼已更新；其他電腦需重新登入。');}catch(error){message($('passwordStatus'),error.message,true);}finally{$('passwordSave').disabled=false;}});
-    window.addEventListener('teacher:session',event=>{if(!event.detail.loggedIn)showLogin();});
     window.addEventListener('beforeunload',event=>{if(dirty.size){event.preventDefault();event.returnValue='';}});
-    if(A.loggedIn())openDashboard();else showLogin();
+    if(A.loggedIn()){ $('teacherIdentity').textContent=TEACHER_CONFIG.email;openDashboard(); }else showLogin();
 })();

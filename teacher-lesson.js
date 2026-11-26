@@ -51,6 +51,6 @@
         const studentFooter=document.querySelector('footer');studentFooter.textContent='教師模式 · 教學進度跨電腦同步 · MakeCode 作品保存在目前瀏覽器';
         lock(true);load();
     }
-    root.TeacherLesson={active,year,classId,onChange,attach,navigate,urlForCourse,projectKey:course=>`microbit-teacher-projects-${year}-${classId}-${course}-v1`};
+    root.TeacherLesson={active,year,classId,onChange,attach,navigate,urlForCourse,projectKey:course=>`microbit-teacher-projects-${root.TEACHER_CONFIG.userId}-${year}-${classId}-${course}-v1`};
     root.addEventListener('beforeunload',event=>{if(savedGeneration<generation){event.preventDefault();event.returnValue='';}});
 })(window);
