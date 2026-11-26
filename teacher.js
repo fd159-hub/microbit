@@ -2,20 +2,25 @@
     'use strict';
     const $=id=>document.getElementById(id),C=TeacherCatalog,A=TeacherClient;
     if(!window.TEACHER_CONFIG?.hosted){const host=window.TEACHER_CONFIG?.hostUrl;if(host){document.querySelector('main').textContent='正在開啟校內 Google 教師入口…';location.replace(host);}else $('loginStatus').textContent='教師雲端服務尚未設定。';return;}
-    let activeScope={year:115,classId:'601'},loadVersion=0;
+    let activeScope={year:115,classId:'601'},loadVersion=0,selectedCourse='';
     const dirty=new Set(),cards=new Map();
     const time=value=>value?new Date(value).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false}):'尚無雲端紀錄';
     const message=(el,text,error=false)=>{el.textContent=text;el.classList.toggle('error',error);};
     function showLogin(){ $('dashboard').hidden=true;message($('loginStatus'),'無法確認登入帳號，請重新開啟教師入口。',true); }
-    function setBusy(value){$('loadScope').disabled=value;$('schoolYear').disabled=value;$('classId').disabled=value;$('courseProgress').inert=value;}
+    function setBusy(value){$('loadScope').disabled=value;$('schoolYear').disabled=value;$('classId').disabled=value;$('teacherCourse').disabled=value;$('courseProgress').inert=value;}
+    function showCourse(){
+        for(const card of cards.values())card.article.hidden=card.course.id!==selectedCourse;
+        $('coursePrompt').hidden=!!selectedCourse;
+        $('courseProgress').hidden=!selectedCourse;
+    }
     function fieldsChanged(card){const record=card.record;return Number(card.select.value)!==record.checked.length||card.note.value!==record.note;}
     function editedRecord(card){const count=Number(card.select.value),record=card.record;return C.normalize({...record,checked:Array.from({length:count},(_,i)=>i),current:count===record.checked.length?record.current:Math.min(count,card.course.steps.length-1),note:card.note.value});}
     async function saveCard(card){
         if(card.busy)return false;
-        card.busy=true;card.save.disabled=true;card.resume.disabled=true;message(card.status,'正在儲存到雲端…');
+        card.busy=true;card.save.disabled=true;card.resume.disabled=true;$('teacherCourse').disabled=true;message(card.status,'正在儲存到雲端…');
         try{card.record=await A.save(editedRecord(card));dirty.delete(card.course.id);renderSummary(card);message(card.status,'已儲存');return true;}
         catch(error){message(card.status,error.message,true);return false;}
-        finally{card.busy=false;card.save.disabled=false;card.resume.disabled=false;}
+        finally{card.busy=false;card.save.disabled=false;card.resume.disabled=false;$('teacherCourse').disabled=false;}
     }
     function renderSummary(card){const n=card.record.checked.length,total=card.course.steps.length;card.summary.textContent=n===total?'本課已完成':n===0?'尚未開始':`已完成 ${n} / ${total} 步`;card.updated.textContent=`更新：${time(card.record.updatedAt)}`;}
     function renderCourse(course,record){
@@ -31,7 +36,7 @@
         const actions=document.createElement('div');actions.className='actions';const save=document.createElement('button');save.type='button';save.className='button';save.textContent='儲存進度';const resume=document.createElement('a');resume.className='button primary';resume.textContent='接續上課';resume.target='_top';resume.href=A.route('lesson',{id:course.id,year:String(record.year),class:record.classId});actions.append(save,resume);
         const updated=document.createElement('p');updated.className='updated';const status=document.createElement('p');status.setAttribute('role','status');
         article.append(number,title,summary,selectLabel,noteLabel,actions,updated,status);
-        const card={course,record,select,note,save,resume,summary,updated,status,busy:false};cards.set(course.id,card);renderSummary(card);
+        const card={course,record,select,note,save,resume,summary,updated,status,article,busy:false};cards.set(course.id,card);renderSummary(card);
         const mark=()=>{if(fieldsChanged(card)){dirty.add(course.id);message(status,'已修改，請儲存進度。');}else{dirty.delete(course.id);message(status,'');}};
         select.addEventListener('change',mark);note.addEventListener('input',mark);save.addEventListener('click',()=>saveCard(card));
         resume.addEventListener('click',event=>{if(card.busy||fieldsChanged(card)){event.preventDefault();message(card.status,'請先儲存這一課的修改，再接續上課。',true);}});
@@ -43,7 +48,7 @@
         if(!C.validScope(year,classId)){message($('cloudStatus'),'學年度請輸入115以上的整數，班級限601～605。',true);return;}
         const version=++loadVersion;setBusy(true);message($('cloudStatus'),'正在讀取雲端進度…');
         try{const records=await A.read(year,classId);if(version!==loadVersion)return;activeScope={year,classId};cards.clear();$('scopeTitle').textContent=`${year} 學年度 · ${classId} 班`;
-            const byId=new Map(records.map(r=>[r.courseId,C.normalize(r)]));$('courseProgress').replaceChildren(...C.courses.map(course=>renderCourse(course,byId.get(course.id)||C.empty(year,classId,course.id))));
+            const byId=new Map(records.map(r=>[r.courseId,C.normalize(r)]));$('courseProgress').replaceChildren(...C.courses.map(course=>renderCourse(course,byId.get(course.id)||C.empty(year,classId,course.id))));showCourse();
             try{localStorage.setItem('microbit-teacher-scope-v2-'+TEACHER_CONFIG.userId,JSON.stringify(activeScope));}catch{}
             message($('cloudStatus'),'已讀取雲端進度');
         }catch(error){message($('cloudStatus'),error.message,true);if(error.code==='SESSION')showLogin();}finally{if(version===loadVersion)setBusy(false);}
@@ -54,6 +59,11 @@
     if(C.validScope(proposed.year,proposed.classId)){$('schoolYear').value=String(proposed.year);$('classId').value=proposed.classId;}
     const currentYear=new Date().getFullYear()-1911;for(let year=115;year<=Math.max(118,currentYear+2);year++){const option=document.createElement('option');option.value=String(year);$('yearChoices').append(option);}
     $('loadScope').addEventListener('click',loadScope);
+    for(const course of C.courses){const option=document.createElement('option');option.value=course.id;option.textContent=`L${course.label} ${course.title}`;$('teacherCourse').append(option);}
+    $('teacherCourse').addEventListener('change',()=>{
+        if(dirty.size||[...cards.values()].some(card=>card.busy)){$('teacherCourse').value=selectedCourse;message($('cloudStatus'),'請先儲存目前課程的修改，再切換課程。',true);return;}
+        selectedCourse=$('teacherCourse').value;showCourse();message($('cloudStatus'),'已讀取雲端進度');
+    });
     window.addEventListener('beforeunload',event=>{if(dirty.size){event.preventDefault();event.returnValue='';}});
     if(A.loggedIn()){ $('teacherIdentity').textContent=TEACHER_CONFIG.email;openDashboard(); }else showLogin();
 })();
