@@ -18,3 +18,6 @@
 
 ## 學期與既有紀錄
 課程目錄的 year、term 指定所屬學期。目前13課皆為115上；其他學期顯示尚未安排課程。學期連同年度、班級與教師帳號一併傳入讀寫與接續上課連結。舊資料未帶term時視為上，原有上學期儲存鍵沿用，不刪除既有紀錄。後端拒絕將課程寫入未配置的學期。
+
+## 教師課程載入
+教師頁面使用外部 defer JavaScript 檔，維持原有載入順序，避免 HtmlService 改寫課程樣板字串。更新 JavaScript 時先發布 GitHub Pages，再更新 Apps Script。執行 node backend/verify-render.cjs 檢查14個頁面的來源與依賴順序。

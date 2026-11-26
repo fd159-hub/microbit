@@ -5,10 +5,11 @@ const COURSE_TERMS = __COURSE_TERMS__;
 const TEACHER_DOCUMENTS = __TEACHER_DOCUMENTS__;
 const TEACHER_FILES = __TEACHER_FILES__;
 function render_(html) {
-  var scripts=[];
-  html=html.replace(/<script src="([^"?]+)(?:\?[^\"]*)?" defer><\/script>/g,function(_,name){scripts.push(TEACHER_FILES[name]);return '';});
+  // HtmlService 會重新分析 inline JavaScript，部分課程的樣板字串使網址被截斷。
+  // 保留外部 defer script 的原始順序，直接載入公開且不含教師資料的程式檔。
+  html=html.replace(/<script src="([^"?]+)(?:\?[^\"]*)?" defer><\/script>/g,function(_,name){return '<script src="https://fd159-hub.github.io/microbit/'+name+'?v=resume-20261126-1" defer><\/script>';});
   html=html.replace(/<link rel="stylesheet" href="([^"?]+)(?:\?[^\"]*)?">/g,function(_,name){return '<style>'+TEACHER_FILES[name]+'</style>';});
-  return html.replace('</body>','<script>\n'+scripts.join('\n;\n').replace(/<\/script/gi,'<\\/script')+'\n<\/script></body>');
+  return html;
 }
 function doGet(e) {
   var identity=identity_();if(!identity.ok)return HtmlService.createHtmlOutput('<h1>無法進入教師專區</h1><p>請使用 @fdes.tyc.edu.tw Google 帳號登入；若仍無法辨識帳號，請聯絡管理者。</p>');
@@ -17,7 +18,12 @@ function doGet(e) {
   var html=TEACHER_DOCUMENTS[page==='lesson'?courseId:'dashboard'];
   var context={email:identity.email,userId:identity.userId,hosted:true,hostUrl:ScriptApp.getService().getUrl(),page:page,courseId:courseId,year:Number(p.year||115),term:String(p.term||'上'),classId:String(p['class']||'601')};
   var inject='<base href="https://fd159-hub.github.io/microbit/" target="_top"><script>window.TEACHER_CONFIG='+JSON.stringify(context).replace(/</g,'\\u003c')+';<\/script>';
-  return HtmlService.createHtmlOutput(render_(html).replace('<head>','<head>'+inject)).setTitle('micro:bit 教師教學進度');
+  if(page==='lesson'){
+    var dashboardUrl=ScriptApp.getService().getUrl()+'?page=dashboard&year='+context.year+'&term='+encodeURIComponent(context.term)+'&class='+encodeURIComponent(context.classId);
+    var startup='<aside id="teacherStartup" role="status" style="padding:16px;background:#fff5db">正在載入教學步驟與教師進度；若持續沒有顯示，請重新整理，或 <a target="_top" href="'+dashboardUrl+'">返回班級進度</a>。</aside>';
+    html=html.replace(/(<body\b[^>]*>)/,function(match){return match+startup;});
+  }
+  return HtmlService.createHtmlOutput(render_(html).replace('<head>',function(){return '<head>'+inject;})).setTitle('micro:bit 教師教學進度');
 }
 function teacherApi(request) { try { return api_(request); } catch(err) { return {ok:false,code:'REQUEST',error:'請求無法處理，請稍後再試。'}; } }
 function doPost(e) {

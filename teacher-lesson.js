@@ -35,6 +35,7 @@
     async function navigate(url){if(await flush())location.href=urlForCourse(url);}
     function urlForCourse(file){const url=new URL(file,location.href);url.search=new URLSearchParams({teacher:'1',year:String(year),term,class:classId||''});return url.href;}
     function attach(api){
+        const startup=document.getElementById('teacherStartup');if(startup)startup.remove();
         bridge=api;workspace=document.querySelector('.workspace');document.body.classList.add('teacher-mode');
         banner=document.createElement('aside');banner.className='teacher-banner';banner.setAttribute('aria-label','教師教學模式');
         const label=document.createElement('strong');label.textContent=valid?`教師模式 · ${year}${term} · ${classId} 班`:'教師模式';
