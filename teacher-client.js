@@ -9,5 +9,5 @@
         }finally{clearTimeout(timer);}
     }
     function route(page,scope={}){const url=new URL(root.TEACHER_CONFIG.hostUrl);url.search=new URLSearchParams({page,...scope});return url.href;}
-    root.TeacherClient={route,identity:()=>request('identity'),loggedIn:()=>!!root.TEACHER_CONFIG?.email,read:async(year,classId)=>(await request('read',{year,classId})).records,save:async record=>(await request('save',{record:TeacherCatalog.normalize(record),expectedRevision:record.revision||0})).record};
+    root.TeacherClient={route,identity:()=>request('identity'),loggedIn:()=>!!root.TEACHER_CONFIG?.email,read:async(year,classId,term='上')=>(await request('read',{year,classId,term})).records,save:async record=>(await request('save',{record:TeacherCatalog.normalize(record),expectedRevision:record.revision||0})).record};
 })(window);

@@ -2,7 +2,7 @@
     'use strict';
     const query=new URLSearchParams(location.search),active=!!root.TEACHER_CONFIG?.hosted&&root.TEACHER_CONFIG.page==='lesson';
     if(!active){root.TeacherLesson={active:false};return;}
-    const year=Number(root.TEACHER_CONFIG.year),classId=root.TEACHER_CONFIG.classId,valid=TeacherCatalog.validScope(year,classId);
+    const term=root.TEACHER_CONFIG.term||'上',year=Number(root.TEACHER_CONFIG.year),classId=root.TEACHER_CONFIG.classId,valid=TeacherCatalog.validScope(year,classId,term)&&TeacherCatalog.courses.some(c=>c.id===root.TEACHER_CONFIG.courseId&&c.year===year&&c.term===term);
     let bridge=null,record=null,ready=false,applying=false,generation=0,savedGeneration=0,timer=null,writing=null,failed=false;
     let banner,status,saveButton,reloadButton,workspace;
     function say(text,error=false){if(status){status.textContent=text;status.classList.toggle('error',error);}}
@@ -29,17 +29,17 @@
         if(!valid){say('學年度或班級不正確，請返回教師專區重新選擇。',true);return;}
         if(!TeacherClient.loggedIn()){say('請先登入教師專區，再接續這一班的課程。',true);return;}
         ready=false;lock(true);say('正在讀取本班雲端進度…');
-        try{const records=await TeacherClient.read(year,classId);record=TeacherCatalog.normalize(records.find(r=>r.courseId===bridge.courseId)||TeacherCatalog.empty(year,classId,bridge.courseId));applying=true;bridge.restore(record);applying=false;generation=0;savedGeneration=0;failed=false;ready=true;reloadButton.hidden=true;lock(false);say(record.updatedAt?'已載入本班雲端進度':'本班尚未開始這一課');}
+        try{const records=await TeacherClient.read(year,classId,term);record=TeacherCatalog.normalize(records.find(r=>r.courseId===bridge.courseId)||TeacherCatalog.empty(year,classId,bridge.courseId,term));applying=true;bridge.restore(record);applying=false;generation=0;savedGeneration=0;failed=false;ready=true;reloadButton.hidden=true;lock(false);say(record.updatedAt?'已載入本班雲端進度':'本班尚未開始這一課');}
         catch(error){applying=false;say(error.message,true);}
     }
     async function navigate(url){if(await flush())location.href=urlForCourse(url);}
-    function urlForCourse(file){const url=new URL(file,location.href);url.search=new URLSearchParams({teacher:'1',year:String(year),class:classId||''});return url.href;}
+    function urlForCourse(file){const url=new URL(file,location.href);url.search=new URLSearchParams({teacher:'1',year:String(year),term,class:classId||''});return url.href;}
     function attach(api){
         bridge=api;workspace=document.querySelector('.workspace');document.body.classList.add('teacher-mode');
         banner=document.createElement('aside');banner.className='teacher-banner';banner.setAttribute('aria-label','教師教學模式');
-        const label=document.createElement('strong');label.textContent=valid?`教師模式 · ${year} 學年度 · ${classId} 班`:'教師模式';
+        const label=document.createElement('strong');label.textContent=valid?`教師模式 · ${year}${term} · ${classId} 班`:'教師模式';
         status=document.createElement('span');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
-        const manage=document.createElement('a');manage.className='button';manage.textContent='班級進度／教師登入';manage.target='_top';manage.href=TeacherClient.route('dashboard',{year:String(valid?year:115),class:valid?classId:'601'});
+        const manage=document.createElement('a');manage.className='button';manage.textContent='班級進度／教師登入';manage.target='_top';manage.href=TeacherClient.route('dashboard',{year:String(valid?year:115),term:valid?term:'上',class:valid?classId:'601'});
         manage.addEventListener('click',event=>{if(ready&&savedGeneration<generation){event.preventDefault();flush().then(ok=>{if(ok)say('已同步，請再按一次「班級進度」返回。');});}});
         const headerTeacher=document.querySelector('header a[href="teacher.html"]');if(headerTeacher){headerTeacher.href=manage.href;headerTeacher.target='_top';headerTeacher.textContent='教師進度';headerTeacher.addEventListener('click',event=>{if(ready&&savedGeneration<generation){event.preventDefault();flush().then(ok=>{if(ok)say('已同步，請再按一次「教師進度」返回。');});}});}
         saveButton=document.createElement('button');saveButton.className='button';saveButton.textContent='立即同步';saveButton.addEventListener('click',()=>{if(!ready)load();else flush();});
@@ -51,6 +51,6 @@
         const studentFooter=document.querySelector('footer');studentFooter.textContent='教師模式 · 教學進度跨電腦同步 · MakeCode 作品保存在目前瀏覽器';
         lock(true);load();
     }
-    root.TeacherLesson={active,year,classId,onChange,attach,navigate,urlForCourse,projectKey:course=>`microbit-teacher-projects-${root.TEACHER_CONFIG.userId}-${year}-${classId}-${course}-v1`};
+    root.TeacherLesson={active,year,classId,onChange,attach,navigate,urlForCourse,projectKey:course=>`microbit-teacher-projects-${root.TEACHER_CONFIG.userId}-${year}-${classId}-${course}${term==='下'?'-lower':''}-v1`};
     root.addEventListener('beforeunload',event=>{if(savedGeneration<generation){event.preventDefault();event.returnValue='';}});
 })(window);
